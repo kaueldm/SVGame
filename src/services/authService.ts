@@ -24,34 +24,33 @@ export class AuthService {
 
       // Se não encontrou, cria um novo
       if (queryError && queryError.code === 'PGRST116') {
-        const newPlayer = {
-          username: username,
-          name: username,
-          class: 'Voidwalker',
-          level: 1,
-          xp: 0,
-          hp: 100,
-          max_hp: 100,
-          mana: 50,
-          max_mana: 50,
-          stamina: 100,
-          max_stamina: 100,
-          strength: 10,
-          agility: 10,
-          intelligence: 10,
-          defense: 5,
-          gold: 0,
-          essence: 0,
-          shard: 0,
-          dna_color: this.generateDNAColor(username),
-          dna_pattern: 'circle',
-          user_id: null // Sem autenticação
-        };
+      const newPlayer = {
+        username: username,
+        name: username,
+        class: 'Voidwalker',
+        level: 1,
+        xp: 0,
+        hp: 100,
+        max_hp: 100,
+        mana: 50,
+        max_mana: 50,
+        stamina: 100,
+        max_stamina: 100,
+        strength: 10,
+        agility: 10,
+        intelligence: 10,
+        defense: 5,
+        gold: 0,
+        essence: 0,
+        shard: 0,
+        dna_color: this.generateDNAColor(username),
+        dna_pattern: 'circle'
+      };
 
         const { data: createdPlayer, error: insertError } = await supabase
           .from('players')
           .insert([newPlayer])
-          .select()
+          .select('*')
           .single();
 
         if (insertError) {
