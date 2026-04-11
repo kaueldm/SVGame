@@ -3,14 +3,22 @@ import type { Player } from '../types/game';
 
 export class AuthService {
   /**
-   * Registra um novo usuário
+   * Registra um novo usuário com username
    */
-  static async signup(email: string, password: string, playerName: string): Promise<{ success: boolean; error?: string }> {
+  static async signup(username: string, password: string, playerName: string): Promise<{ success: boolean; error?: string }> {
     try {
+      // Cria um email único baseado no username
+      const email = `${username}@svgame.local`;
+
       // Cria usuário no Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
-        password
+        password,
+        options: {
+          data: {
+            username: username
+          }
+        }
       });
 
       if (authError) {
@@ -24,8 +32,9 @@ export class AuthService {
       // Cria player inicial no banco de dados
       const playerData = {
         user_id: authData.user.id,
+        username: username,
         name: playerName,
-        class: 'Voidwalker', // Classe padrão
+        class: 'Voidwalker',
         level: 1,
         xp: 0,
         hp: 100,
@@ -61,17 +70,20 @@ export class AuthService {
   }
 
   /**
-   * Faz login do usuário
+   * Faz login do usuário com username
    */
-  static async login(email: string, password: string): Promise<{ success: boolean; error?: string }> {
+  static async login(username: string, password: string): Promise<{ success: boolean; error?: string }> {
     try {
+      // Converte username para email
+      const email = `${username}@svgame.local`;
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
       if (error) {
-        return { success: false, error: error.message };
+        return { success: false, error: 'Usuário ou senha incorretos' };
       }
 
       return { success: true };

@@ -35,10 +35,10 @@ export const useAuth = () => {
     };
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (username: string, password: string) => {
     setLoading(true);
     setError(null);
-    const result = await AuthService.login(email, password);
+    const result = await AuthService.login(username, password);
     if (!result.success) {
       setError(result.error || 'Erro ao fazer login');
     }
@@ -46,10 +46,10 @@ export const useAuth = () => {
     return result;
   };
 
-  const signup = async (email: string, password: string, playerName: string) => {
+  const signup = async (username: string, password: string, playerName: string) => {
     setLoading(true);
     setError(null);
-    const result = await AuthService.signup(email, password, playerName);
+    const result = await AuthService.signup(username, password, playerName);
     if (!result.success) {
       setError(result.error || 'Erro ao criar conta');
     }
