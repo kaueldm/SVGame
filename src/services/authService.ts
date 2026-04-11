@@ -22,17 +22,18 @@ export class AuthService {
       }
 
       // Cria player inicial no banco de dados
-      const initialPlayer: Omit<Player, 'id'> = {
+      const playerData = {
+        user_id: authData.user.id,
         name: playerName,
         class: 'Voidwalker', // Classe padrão
         level: 1,
         xp: 0,
         hp: 100,
-        maxHp: 100,
+        max_hp: 100,
         mana: 50,
-        maxMana: 50,
+        max_mana: 50,
         stamina: 100,
-        maxStamina: 100,
+        max_stamina: 100,
         strength: 10,
         agility: 10,
         intelligence: 10,
@@ -40,18 +41,13 @@ export class AuthService {
         gold: 0,
         essence: 0,
         shard: 0,
-        dnaColor: this.generateDNAColor(playerName),
-        dnaPattern: 'circle'
+        dna_color: this.generateDNAColor(playerName),
+        dna_pattern: 'circle'
       };
 
       const { error: playerError } = await supabase
         .from('players')
-        .insert([
-          {
-            user_id: authData.user.id,
-            ...initialPlayer
-          }
-        ]);
+        .insert([playerData]);
 
       if (playerError) {
         return { success: false, error: playerError.message };
@@ -132,7 +128,18 @@ export class AuthService {
         return null;
       }
 
-      return data as Player;
+      // Mapeia snake_case do banco para camelCase do frontend
+      if (data) {
+        return {
+          ...data,
+          maxHp: data.max_hp,
+          maxMana: data.max_mana,
+          maxStamina: data.max_stamina,
+          dnaColor: data.dna_color,
+          dnaPattern: data.dna_pattern
+        } as Player;
+      }
+      return null;
     } catch (error) {
       console.error('Erro ao carregar dados do player:', error);
       return null;
@@ -144,9 +151,20 @@ export class AuthService {
    */
   static async savePlayerProgress(userId: string, playerData: Partial<Player>): Promise<{ success: boolean; error?: string }> {
     try {
+      // Mapeia camelCase para snake_case
+      const dbData: any = {};
+      Object.entries(playerData).forEach(([key, value]) => {
+        if (key === 'maxHp') dbData.max_hp = value;
+        else if (key === 'maxMana') dbData.max_mana = value;
+        else if (key === 'maxStamina') dbData.max_stamina = value;
+        else if (key === 'dnaColor') dbData.dna_color = value;
+        else if (key === 'dnaPattern') dbData.dna_pattern = value;
+        else dbData[key] = value;
+      });
+
       const { error } = await supabase
         .from('players')
-        .update(playerData)
+        .update(dbData)
         .eq('user_id', userId);
 
       if (error) {
