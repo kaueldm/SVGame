@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useGameStore } from './store/useGameStore';
 import { HUD } from './ui/HUD';
 import { PlayerSVG } from './components/PlayerSVG';
+import { GeminiDemo } from './components/GeminiDemo';
 import type { Player } from './types/game';
 
 const App: React.FC = () => {
@@ -85,6 +86,9 @@ const App: React.FC = () => {
           </button>
         </div>
       </main>
+
+      {/* Gemini Demo */}
+      {player && <GeminiDemo playerLevel={player.level} playerClass={player.class} playerName={player.name} />}
 
       {/* Footer / Versão */}
       <div className="fixed bottom-4 right-6 text-white/20 font-mono text-[10px] uppercase tracking-widest">
