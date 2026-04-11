@@ -1,66 +1,19 @@
 import React, { useState } from 'react';
-import { AuthService } from '../services/authService';
 
 interface LoginUIProps {
-  onLoginSuccess: () => void;
+  onEnter: (username: string) => Promise<boolean>;
+  loading?: boolean;
+  error?: string | null;
 }
 
-export const LoginUI: React.FC<LoginUIProps> = ({ onLoginSuccess }) => {
-  const [isLogin, setIsLogin] = useState(true);
+export const LoginUI: React.FC<LoginUIProps> = ({ onEnter, loading = false, error = null }) => {
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [playerName, setPlayerName] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-
-    const result = await AuthService.login(username, password);
-    if (result.success) {
-      setSuccess('Bem-vindo!');
-      setTimeout(() => onLoginSuccess(), 600);
-    } else {
-      setError(result.error || 'Erro ao fazer login');
+    if (username.trim()) {
+      await onEnter(username);
     }
-    setLoading(false);
-  };
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-
-    if (!playerName.trim()) {
-      setError('Nome do personagem é obrigatório');
-      setLoading(false);
-      return;
-    }
-
-    if (username.length < 3) {
-      setError('Username deve ter pelo menos 3 caracteres');
-      setLoading(false);
-      return;
-    }
-
-    const result = await AuthService.signup(username, password, playerName);
-    if (result.success) {
-      setSuccess('Conta criada! Entrando...');
-      setTimeout(() => {
-        setIsLogin(true);
-        setUsername('');
-        setPassword('');
-        setPlayerName('');
-      }, 800);
-    } else {
-      setError(result.error || 'Erro ao criar conta');
-    }
-    setLoading(false);
   };
 
   return (
@@ -87,87 +40,36 @@ export const LoginUI: React.FC<LoginUIProps> = ({ onLoginSuccess }) => {
       </div>
 
       {/* Container Principal */}
-      <div className="relative z-10 w-full max-w-md mx-auto px-6">
+      <div className="relative z-10 w-full max-w-sm mx-auto px-6">
         {/* Card */}
         <div className="backdrop-blur-2xl bg-white/3 border border-white/10 rounded-2xl p-8 shadow-2xl hover:border-white/20 transition-all duration-500">
-          {/* Header Minimalista */}
+          {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-black tracking-tighter uppercase mb-1 bg-gradient-to-r from-purple-300 via-white to-cyan-300 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-black tracking-tighter uppercase mb-1 bg-gradient-to-r from-purple-300 via-white to-cyan-300 bg-clip-text text-transparent">
               SVGame
             </h1>
             <div className="h-0.5 w-12 mx-auto bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full" />
-          </div>
-
-          {/* Tabs */}
-          <div className="flex gap-1 mb-8 bg-white/5 p-1 rounded-lg">
-            {[
-              { label: 'Login', value: true },
-              { label: 'Cadastro', value: false }
-            ].map((tab) => (
-              <button
-                key={String(tab.value)}
-                onClick={() => {
-                  setIsLogin(tab.value);
-                  setError(null);
-                  setSuccess(null);
-                }}
-                className={`flex-1 py-2 rounded-md font-bold uppercase tracking-widest text-xs transition-all duration-300 ${
-                  isLogin === tab.value
-                    ? 'bg-gradient-to-r from-purple-600/50 to-cyan-600/50 text-white shadow-lg shadow-purple-500/20'
-                    : 'text-white/50 hover:text-white/70'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+            <p className="text-white/40 text-xs uppercase tracking-widest mt-3 font-mono">
+              RPG 100% SVG
+            </p>
           </div>
 
           {/* Form */}
-          <form onSubmit={isLogin ? handleLogin : handleSignup} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {/* Username Input */}
             <div>
-              <label className="block text-white/60 text-xs font-bold uppercase tracking-widest mb-2">
-                Username
+              <label className="block text-white/60 text-xs font-bold uppercase tracking-widest mb-3">
+                Seu Username
               </label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="seu_usuario"
+                placeholder="Digite seu nome"
+                autoFocus
                 required
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50 focus:bg-white/10 focus:shadow-lg focus:shadow-purple-500/20 transition-all duration-300 text-sm"
-              />
-            </div>
-
-            {/* Player Name Input (Cadastro) */}
-            {!isLogin && (
-              <div>
-                <label className="block text-white/60 text-xs font-bold uppercase tracking-widest mb-2">
-                  Nome do Personagem
-                </label>
-                <input
-                  type="text"
-                  value={playerName}
-                  onChange={(e) => setPlayerName(e.target.value)}
-                  placeholder="Escolha um nome"
-                  required={!isLogin}
-                  className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50 focus:bg-white/10 focus:shadow-lg focus:shadow-purple-500/20 transition-all duration-300 text-sm"
-                />
-              </div>
-            )}
-
-            {/* Password Input */}
-            <div>
-              <label className="block text-white/60 text-xs font-bold uppercase tracking-widest mb-2">
-                Senha
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50 focus:bg-white/10 focus:shadow-lg focus:shadow-purple-500/20 transition-all duration-300 text-sm"
+                maxLength={20}
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50 focus:bg-white/10 focus:shadow-lg focus:shadow-purple-500/20 transition-all duration-300 text-sm"
               />
             </div>
 
@@ -178,18 +80,11 @@ export const LoginUI: React.FC<LoginUIProps> = ({ onLoginSuccess }) => {
               </div>
             )}
 
-            {/* Success Message */}
-            {success && (
-              <div className="p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-green-300 text-xs font-medium">
-                ✅ {success}
-              </div>
-            )}
-
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
-              className="w-full py-2.5 mt-4 relative overflow-hidden rounded-lg font-bold uppercase tracking-widest text-xs transition-all duration-300 group disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading || !username.trim()}
+              className="w-full py-3 mt-6 relative overflow-hidden rounded-lg font-bold uppercase tracking-widest text-xs transition-all duration-300 group disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {/* Fundo */}
               <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-cyan-600 group-hover:from-purple-500 group-hover:to-cyan-500 transition-all duration-300" />
@@ -204,41 +99,25 @@ export const LoginUI: React.FC<LoginUIProps> = ({ onLoginSuccess }) => {
                 {loading ? (
                   <>
                     <span className="animate-spin inline-block">⚙️</span>
-                    Processando...
+                    Entrando...
                   </>
-                ) : isLogin ? (
-                  'Entrar no Jogo'
                 ) : (
-                  'Criar Conta'
+                  <>
+                    <span>🎮</span>
+                    Entrar no Jogo
+                  </>
                 )}
               </span>
             </button>
           </form>
 
-          {/* Toggle */}
-          <p className="text-center text-white/40 text-xs mt-6">
-            {isLogin ? 'Novo por aqui? ' : 'Já tem conta? '}
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-purple-300 hover:text-purple-200 font-bold transition-colors"
-            >
-              {isLogin ? 'Cadastre-se' : 'Faça login'}
-            </button>
+          {/* Info */}
+          <p className="text-center text-white/30 text-xs mt-6 font-mono leading-relaxed">
+            // Sem login, sem senha<br />
+            // Apenas seu username
           </p>
         </div>
-
-        {/* Dica */}
-        <p className="text-center text-white/30 text-xs mt-8 font-mono">
-          // Bem-vindo ao SVGame
-        </p>
       </div>
-
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-        }
-      `}</style>
     </div>
   );
 };
