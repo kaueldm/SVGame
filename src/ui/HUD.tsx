@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
-import { Player } from '../types/game';
+import type { Player } from '../types/game';
 import { PlayerSVG } from '../components/PlayerSVG';
 
 interface HUDProps {

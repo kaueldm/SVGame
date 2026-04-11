@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { GameState, Player, Stats, InventoryItem } from '../types/game';
+import type { GameState, Player, Stats, InventoryItem } from '../types/game';
 
 export const useGameStore = create<GameState>((set) => ({
   player: null,

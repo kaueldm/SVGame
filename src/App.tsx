@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useGameStore } from './store/useGameStore';
 import { HUD } from './ui/HUD';
 import { PlayerSVG } from './components/PlayerSVG';
-import { Player } from './types/game';
+import type { Player } from './types/game';
 
 const App: React.FC = () => {
   const { player, setPlayer } = useGameStore();
