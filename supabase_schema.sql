@@ -1,15 +1,16 @@
--- RPG SVG SUPABASE SCHEMA COM AUTENTICAÇÃO
+-- RPG SVG SUPABASE SCHEMA - VERSÃO SIMPLIFICADA (SEM AUTENTICAÇÃO)
 -- Execute este script no SQL Editor do seu projeto Supabase
 
 -- 1. Extensões necessárias
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 2. Tabela de Players (vinculada ao auth.users)
+-- 2. Tabela de Players (SEM vinculação a auth.users)
 CREATE TABLE IF NOT EXISTS public.players (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
+    username TEXT NOT NULL UNIQUE,
+    user_id UUID,
     name TEXT NOT NULL,
-    class TEXT NOT NULL, -- Guerreiro, Mago, Necromante, Assassino, Pyromancer, Cryomancer, Stormcaller, Paladino, Psíquico, Voidwalker
+    class TEXT NOT NULL,
     level INTEGER DEFAULT 1,
     xp INTEGER DEFAULT 0,
     hp INTEGER DEFAULT 100,
@@ -36,14 +37,14 @@ CREATE TABLE IF NOT EXISTS public.items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     description TEXT,
-    type TEXT NOT NULL, -- weapon, armor, accessory, consumable
-    rarity TEXT NOT NULL, -- E, D, C, B, A, S
+    type TEXT NOT NULL,
+    rarity TEXT NOT NULL,
     stats JSONB DEFAULT '{}'::jsonb,
     base_value INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 4. Tabela de Inventário (vinculada ao player)
+-- 4. Tabela de Inventário
 CREATE TABLE IF NOT EXISTS public.inventory (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     player_id UUID REFERENCES public.players(id) ON DELETE CASCADE NOT NULL,
@@ -58,18 +59,18 @@ CREATE TABLE IF NOT EXISTS public.quests (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title TEXT NOT NULL,
     description TEXT,
-    type TEXT NOT NULL, -- daily, weekly, unique, storyline
+    type TEXT NOT NULL,
     min_level INTEGER DEFAULT 1,
     rewards JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 6. Tabela de Progresso de Quests (vinculada ao player)
+-- 6. Tabela de Progresso de Quests
 CREATE TABLE IF NOT EXISTS public.player_quests (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     player_id UUID REFERENCES public.players(id) ON DELETE CASCADE NOT NULL,
     quest_id UUID REFERENCES public.quests(id) ON DELETE CASCADE NOT NULL,
-    status TEXT DEFAULT 'active', -- active, completed, failed
+    status TEXT DEFAULT 'active',
     progress JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
@@ -79,7 +80,7 @@ CREATE TABLE IF NOT EXISTS public.player_quests (
 CREATE TABLE IF NOT EXISTS public.bosses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
-    category TEXT NOT NULL, -- Elemental, Mecânico, Cósmico, Mutante, Elite, Caótico, Sombra, Velocidade, Psíquico, Final
+    category TEXT NOT NULL,
     level INTEGER DEFAULT 1,
     hp INTEGER NOT NULL,
     stats JSONB DEFAULT '{}'::jsonb,
@@ -87,13 +88,13 @@ CREATE TABLE IF NOT EXISTS public.bosses (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 8. Tabela de Histórico de Batalhas (vinculada ao player)
+-- 8. Tabela de Histórico de Batalhas
 CREATE TABLE IF NOT EXISTS public.battle_history (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     player_id UUID REFERENCES public.players(id) ON DELETE CASCADE NOT NULL,
-    enemy_id UUID, -- Pode ser um boss_id ou nulo para inimigos comuns
+    enemy_id UUID,
     enemy_name TEXT,
-    result TEXT NOT NULL, -- victory, defeat, escape
+    result TEXT NOT NULL,
     xp_gained INTEGER DEFAULT 0,
     gold_gained INTEGER DEFAULT 0,
     loot_gained JSONB DEFAULT '[]'::jsonb,
@@ -104,6 +105,7 @@ CREATE TABLE IF NOT EXISTS public.battle_history (
 CREATE OR REPLACE VIEW public.global_ranking AS
 SELECT 
     p.id, 
+    p.username,
     p.name, 
     p.class, 
     p.level, 
@@ -114,47 +116,16 @@ FROM public.players p
 ORDER BY p.level DESC, p.xp DESC;
 
 -- 10. Índices para performance
-CREATE INDEX IF NOT EXISTS idx_players_user_id ON public.players(user_id);
+CREATE INDEX IF NOT EXISTS idx_players_username ON public.players(username);
 CREATE INDEX IF NOT EXISTS idx_inventory_player_id ON public.inventory(player_id);
 CREATE INDEX IF NOT EXISTS idx_player_quests_player_id ON public.player_quests(player_id);
 CREATE INDEX IF NOT EXISTS idx_battle_history_player_id ON public.battle_history(player_id);
 
--- 11. Políticas de Segurança (RLS)
-ALTER TABLE public.players ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.player_quests ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.battle_history ENABLE ROW LEVEL SECURITY;
-
--- Políticas para Players
-CREATE POLICY "Players can view their own data" ON public.players
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Players can update their own data" ON public.players
-    FOR UPDATE USING (auth.uid() = user_id);
-
--- Políticas para Inventário
-CREATE POLICY "Players can view their own inventory" ON public.inventory
-    FOR SELECT USING (player_id IN (SELECT id FROM public.players WHERE user_id = auth.uid()));
-
-CREATE POLICY "Players can manage their own inventory" ON public.inventory
-    FOR ALL USING (player_id IN (SELECT id FROM public.players WHERE user_id = auth.uid()));
-
--- Políticas para Quests
-CREATE POLICY "Players can view their own quests" ON public.player_quests
-    FOR SELECT USING (player_id IN (SELECT id FROM public.players WHERE user_id = auth.uid()));
-
-CREATE POLICY "Players can manage their own quests" ON public.player_quests
-    FOR ALL USING (player_id IN (SELECT id FROM public.players WHERE user_id = auth.uid()));
-
--- Políticas para Battle History
-CREATE POLICY "Players can view their own battles" ON public.battle_history
-    FOR SELECT USING (player_id IN (SELECT id FROM public.players WHERE user_id = auth.uid()));
-
-CREATE POLICY "Players can create battle records" ON public.battle_history
-    FOR INSERT WITH CHECK (player_id IN (SELECT id FROM public.players WHERE user_id = auth.uid()));
-
--- Tabelas públicas (sem RLS)
--- items, quests, bosses são públicas (todos podem ler)
+-- 11. Remover RLS (Row Level Security) já que não temos autenticação
+ALTER TABLE public.players DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.inventory DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.player_quests DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.battle_history DISABLE ROW LEVEL SECURITY;
 
 -- 12. Inserir alguns itens básicos iniciais
 INSERT INTO public.items (name, description, type, rarity, stats, base_value) VALUES
@@ -180,3 +151,8 @@ CREATE TRIGGER update_players_updated_at BEFORE UPDATE ON public.players
 
 CREATE TRIGGER update_player_quests_updated_at BEFORE UPDATE ON public.player_quests
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- 14. IMPORTANTE: Se você já tem a tabela players, execute isto para adicionar a coluna username:
+-- ALTER TABLE public.players ADD COLUMN IF NOT EXISTS username TEXT UNIQUE;
+-- UPDATE public.players SET username = 'player_' || id::text WHERE username IS NULL;
+-- ALTER TABLE public.players ALTER COLUMN username SET NOT NULL;
